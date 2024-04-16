@@ -46,7 +46,7 @@ def index(request):
 
 
 @login_required
-def room(request):
+def group(request):
     chat_group = get_object_or_404(ChatGroup, groupName="Work")
     chat_messages = chat_group.chat_messages.all()
     form = ChatMessageForm()
@@ -67,7 +67,7 @@ def room(request):
             
             return render(request, 'chat/partials/chat_message_partial.html', context)
     
-    return render(request, 'chat/room.html', {
+    return render(request, 'chat/group.html', {
         "group_name": chat_group.groupName,
         "chat_messages": chat_messages,
         'form': form

@@ -29,7 +29,7 @@
 
                 <div id="chat_message_box">
                   <!-- Message box -->
-                  <form hx-post="{% url 'room' %}" hx-target="#chat_messages" hx-swap="beforeend" _="on htmx:afterRequest reset() me">
+                  <form hx-post="{% url 'group' %}" hx-ext="ws" ws-connect="/ws/group/Work" ws-send _="on htmx:wsAfterSend reset() me">
                       {% csrf_token %}
                       {{ form }}
                   </form>
