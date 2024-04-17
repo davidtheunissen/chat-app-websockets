@@ -17,7 +17,13 @@ class RoomConsumer(WebsocketConsumer):
             self.group_name, self.channel_name
         )
         
+        # Update online users' count
+        if self.user not in self.group.usersOnline.all():
+            self.group.usersOnline.add(self.user)
+            self.update_online_count()
+        
         self.accept()
+        
         
     # Disconnect user from group
     def disconnect(self, close_code):
@@ -26,8 +32,13 @@ class RoomConsumer(WebsocketConsumer):
             self.group_name, self.channel_name
         )
         
+        # Update online users' count
+        if self.user in self.group.usersOnline.all():
+            self.group.usersOnline.remove(self.user)
+            self.update_online_count()
+        
     
-    # Receive message on group
+    # Receive message on group and broadcast
     def receive(self, text_data):
         text_data_json = json.loads(text_data)
         body = text_data_json['body']
@@ -43,12 +54,13 @@ class RoomConsumer(WebsocketConsumer):
             'type': 'message_handler',
             'message_id': message.id
         }
-        # Send text data to all open connections
+        # Broadcast text data to channel group
         async_to_sync(self.channel_layer.group_send)(
             self.group_name, event
         )
         
-        
+    
+    # Message handler
     def message_handler(self, event):
         message_id = event['message_id']
         message = ChatMessage.objects.get(id=message_id)
@@ -59,4 +71,23 @@ class RoomConsumer(WebsocketConsumer):
         }
         # Send text data to front end
         html = render_to_string("chat/partials/chat_message_partial.html", context=context)
+        self.send(text_data=html)
+        
+        
+    # Update the online count on users' screens
+    def update_online_count(self):
+        online_count = self.group.usersOnline.count() -1
+        
+        event = {
+            'type': 'online_count_handler',
+            'online_count': online_count
+        }
+        
+        async_to_sync(self.channel_layer.group_send)(self.group_name, event)
+        
+        
+    # Online count handler
+    def online_count_handler(self, event):
+        online_count = event['online_count']
+        html = render_to_string("chat/partials/online_count_partial.html", {'online_count': online_count})
         self.send(text_data=html)
